@@ -13,7 +13,7 @@ a = 1.1
 T = 10
 # Parameters
 N = 100
-J = 0.05
+J = 0.1
 K = 1.1
 
 #Initial state and ODEs of the system
@@ -100,16 +100,17 @@ plt.plot(time, maxLocation, '+')
 
 #Animation
 fig, ax = plt.subplots()
+ax.set_xlim(0, 100)
+ax.set_ylim(-3, 5)
 fig.suptitle("Soliton wave animation")
 line1 = ax.plot()
 def init():
-    ax.set_xlim(0, 100)
-    ax.set_ylim(-2, 4)
     return line1
 def update(frame, data):
     ax.clear()
-    ax.plot(data[frame][::2], 'o', markersize=2)
-    ax.plot(data[frame][1::2], 'o', markersize=2)
-animation = FuncAnimation(fig, partial(update,data=state), frames=range(len(state)), init_func=init)
-
+    ax.set_xlim(0, 100)
+    ax.set_ylim(-3, 5)
+    ax.plot(data[frame][::2], 'o', markersize=3)
+    ax.plot(data[frame][1::2], 'o', markersize=3)
+animation = FuncAnimation(fig, partial(update,data=state), frames=range(len(state)), init_func=init, interval=20)
 plt.show()
