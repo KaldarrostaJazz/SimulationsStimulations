@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from functools import partial
 import numpy as np
 import time as tm
 from math import exp
@@ -88,11 +90,26 @@ ax2.set_title("5th Neuron dynamics")
 ax2.plot(time, [row[10] for row in state])
 ax2.plot(time, [row[11] for row in state], '--')
 plt.figure()
-plt.title("Wavefront propagation speed")
+plt.title("Wave front propagation")
 plt.plot(time, maxLocation, '+')
 #plt.plot(time, x_fit)
 #plt.figure()
 #plt.title("Initial conditions")
 #plt.plot(y0[::2], 'x')
 #plt.plot(y0[1::2], 'x')
+
+#Animation
+fig, ax = plt.subplots()
+fig.suptitle("Soliton wave animation")
+line1 = ax.plot()
+def init():
+    ax.set_xlim(0, 100)
+    ax.set_ylim(-2, 4)
+    return line1
+def update(frame, data):
+    ax.clear()
+    ax.plot(data[frame][::2], 'o', markersize=2)
+    ax.plot(data[frame][1::2], 'o', markersize=2)
+animation = FuncAnimation(fig, partial(update,data=state), frames=range(len(state)), init_func=init)
+
 plt.show()
