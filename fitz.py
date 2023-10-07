@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import math
 
 a = 0.7
 b = 0.8

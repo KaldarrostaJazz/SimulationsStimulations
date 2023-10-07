@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
-import math
 
 a = 0.7
-b = 1
+b = 0.1
 h = 0.8
 T = 12.5
 I_ext = 20

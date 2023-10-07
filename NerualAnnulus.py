@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, writers
 from functools import partial
 import numpy as np
 import time as tm
@@ -13,7 +13,7 @@ a = 1.1
 T = 10
 # Parameters
 N = 100
-J = 0.1
+J = 0.05
 K = 1.1
 
 #Initial state and ODEs of the system
@@ -30,10 +30,13 @@ def f(t, y):
     sysEquations = np.ndarray(2*N)
     for i in range(0, len(y), 2):
         if (i == 0):
-            sysEquations[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[2*N-2]-y[i]))/e
+            sysEquations[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[2*N-2]-y[i]+y[i+2]))/e
+            sysEquations[i+1]=y[i]+a
+        elif (i == 2*N-2):
+            sysEquations[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[i-2]-y[i]+y[0]))/e
             sysEquations[i+1]=y[i]+a
         else:
-            sysEquations[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[i-2]-y[i]))/e
+            sysEquations[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[i-2]-y[i]+y[i+2]))/e
             sysEquations[i+1]=y[i]+a
     return sysEquations
 
@@ -63,41 +66,50 @@ maxLocation = []
 for i_state in state:
     i_list = i_state.tolist()
     maxLocation.append((i_list.index(max(i_list[::2])))/2)
-"""for i in range(len(maxLocation)-1):
-    if (maxLocation[i+1] < maxLocation[i]):
-        if (maxLocation[i] - maxLocation[i+1] < 101):
-            maxLocation[i+1] += N
-        else:
-            maxLocation[i+1] += 2*N
+"""
+prev=maxLocation[0]
+a = [prev,]
+for x in maxLocation[1::]:
+    if (x < prev):
+        while (x < prev):
+            x += 100
+        a.append(x)
     else:
-        maxLocation[i+1] += 0
-regression = linregress(time, maxLocation)
-x_fit = [t*regression.slope + regression.intercept for t in time]"""
+        a.append(x)
+    prev = x
+regression = linregress(time, a)
+x_fit = [t*regression.slope + regression.intercept for t in time]
+"""
 t2 = tm.time()
 
 #Final drawings
-i = int(len(time)/4)
+i = int(len(time)/5)
 print("Time elapsed during the calculation:", t1 - t0)
 print("Time elapsed for speed calculations:", t2 - t1)
 print("Dimesion of the system:\t", solution.n, "\nNumber of neurons per annulus:\t", N)
-print("Time:\t10s\nTime steps:\t", len(time), "\nPlotted at:\t", i)
+print("Time:\t",T,"s\nTime steps:\t", len(time), "\nPlotted at:\t", i)
 #print("\nRegression result:\nSlope:\t",regression.slope,"\nIntercept:\t", regression.intercept,"\nR-value:\t",regression.rvalue)
 fig, (ax1, ax2) = plt.subplots(1, 2)
+ax1.grid()
 ax1.set_title("State of the sistem at time "+str(i)+"/"+str(len(time)))
 ax1.plot(state[i][::2], 'o', markersize=2)
 ax1.plot(state[i][1::2], 'o', markersize=2)
+ax2.grid()
 ax2.set_title("5th Neuron dynamics")
 ax2.plot(time, [row[10] for row in state])
 ax2.plot(time, [row[11] for row in state], '--')
-plt.figure()
-plt.title("Wave front propagation")
-plt.plot(time, maxLocation, '+')
-#plt.plot(time, x_fit)
 #plt.figure()
-#plt.title("Initial conditions")
-#plt.plot(y0[::2], 'x')
-#plt.plot(y0[1::2], 'x')
+#plt.title("Wave front propagation")
+#plt.grid()
+#plt.plot(time, a, '+')
+#plt.plot(time, x_fit)
+plt.figure()
+plt.title("Initial conditions")
+plt.plot(y0[::2], 'x')
+plt.plot(y0[1::2], 'x')
+plt.show()
 
+#"""
 #Animation
 fig, ax = plt.subplots()
 ax.set_xlim(0, 100)
@@ -112,5 +124,8 @@ def update(frame, data):
     ax.set_ylim(-3, 5)
     ax.plot(data[frame][::2], 'o', markersize=3)
     ax.plot(data[frame][1::2], 'o', markersize=3)
-animation = FuncAnimation(fig, partial(update,data=state), frames=range(len(state)), init_func=init, interval=20)
-plt.show()
+animation = FuncAnimation(fig, partial(update,data=state), frames=range(len(state)), init_func=init, interval=10)
+Writer = writers['pillow']
+writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
+animation.save('SolitonWave.gif', writer=writer)
+#"""
