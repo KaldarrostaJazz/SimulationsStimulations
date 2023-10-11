@@ -9,8 +9,8 @@ from scipy.stats import linregress
 
 # Fixed parameters
 e = 0.01
-a = 1.1
-T = 10
+a = 0.9
+T = 25
 # Parameters
 N = 100
 J = 0.05
@@ -47,7 +47,7 @@ y0 = np.ndarray(4*N, float)
 for i in range(0, len(y0), 4):
     y0[i] = 2*exp(-0.5*(i/4-mean/2)*(i/4-mean/2)/(sigma*sigma)) + restState[0]
     y0[i+1] = restState[1]
-    y0[i+2] =  restState[2]#2*exp(-0.5*(i/4-3*mean/2)*(i/4-3*mean/2)/(sigma*sigma)) +
+    y0[i+2] = 2*exp(-0.5*(i/4-3*mean/2)*(i/4-3*mean/2)/(sigma*sigma)) + restState[2]
     y0[i+3] = restState[3]
 
 def f(t, y):
@@ -102,16 +102,15 @@ print("Time elapsed during the calculation:", t1 - t0)
 print("Time elapsed for speed calculations:", t2 - t1)
 print("Dimesion of the system:\t", solution.n, "\nNumber of neurons per annulus:\t", N)
 print("Time:\t",T,"s\nTime steps:\t", len(time), "\nPlotted at:\t", i)
-print(tRegression,'\n',sRegression)
+print(tRegression)
+print(sRegression)
 #print("\nRegression result:\nSlope:\t",regression.slope,"\nIntercept:\t", regression.intercept,"\nR-value:\t",regression.rvalue)
 fig, (ax1, ax2) = plt.subplots(1, 2)
 ax1.grid()
-#ax1.set_title("State of the sistem at time "+str(i)+"/"+str(len(time)))
-#ax1.plot(state[i][::4], 'o', markersize=2)
-#ax1.plot(state[i][2::4], 'o', markersize=2)
-ax1.eventplot(state)
+ax1.set_title("State of the sistem at time "+str(i)+"/"+str(len(time)))
+ax1.plot(state[i][::4], 'o', markersize=2)
+ax1.plot(state[i][2::4], 'o', markersize=2)
 ax2.grid()
-ax2.set_title("5th Neuron dynamics")
 ax2.plot(time, [row[20] for row in state])
 ax2.plot(time, [row[22] for row in state])
 plt.figure()
@@ -147,4 +146,6 @@ animation = FuncAnimation(fig, partial(update,data=state), frames=range(len(stat
 #Writer = writers['ffmpeg']
 #writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
 #animation.save('SolitonWave.mp4', writer=writer)
+t3 = tm.time()
+print("Time elapsed to draw the graphs and save the animations:\t",t3-t2)
 plt.show()
