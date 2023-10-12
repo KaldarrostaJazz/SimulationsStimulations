@@ -7,16 +7,16 @@ from math import exp
 from scipy.integrate import Radau
 from scipy.stats import linregress
 
-# Fixed parameters
+# Fixed parameters --------------------------------------------------
 e = 0.01
-a = 0.9
+a = 1.1
 T = 25
-# Parameters
+# Parameters --------------------------------------------------
 N = 100
 J = 0.05
-K = 1.1
+K = 0.1
 
-#Some utilities
+# Some utilities --------------------------------------------------
 def find_max(vector_state):
     a = []
     b = []
@@ -37,8 +37,18 @@ def account_cycles(vector, prev):
             resultArray.append(x)
         prev = x
     return resultArray
+def find_spikes(vector_state, vector_time):
+    resultArray = []
+    for i in range(len(vector_state), 4):
+        i_neuron = [row[i] for row in vector_state]
+        indices = []
+        for x in i_neuron:
+            if (x > 2.5):
+                indices.append(i_neuron.index(x))
+        resultArray.append([vector_time[j] for j in indices])
+    return resultArray
 
-#Initial state and ODEs of the system
+# Initial state and ODEs of the system --------------------------------------------------
 mean = N/2
 sigma = N/100
 restState = [-a, -a + a*a*a/3, -a, -a + a*a*a/3]
@@ -51,42 +61,34 @@ for i in range(0, len(y0), 4):
     y0[i+3] = restState[3]
 
 def f(t, y):
-    sysEquations = np.ndarray(4*N)
+    yDot = np.ndarray(4*N)
     for i in range(0, len(y), 4):
         if (i == 0):
-            sysEquations[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[4*N-4]-y[i])-K*(y[i+2]-y[i]))/e
-            sysEquations[i+1]=y[i]+a
-            sysEquations[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[4*N-2]-y[i+2])-K*(y[i]-y[i+2]))/e
-            sysEquations[i+3]=y[i+2]+a
+            yDot[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[4*N-4]-y[i])-K*(y[i+2]-y[i]))/e
+            yDot[i+1]=y[i]+a
+            yDot[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[4*N-2]-y[i+2])-K*(y[i]-y[i+2]))/e
+            yDot[i+3]=y[i+2]+a
         else:
-            sysEquations[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[i-4]-y[i])-K*(y[i+2]-y[i]))/e
-            sysEquations[i+1]=y[i]+a
-            sysEquations[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[i-2]-y[i+2])-K*(y[i]-y[i+2]))/e
-            sysEquations[i+3]=y[i+2]+a
-    return sysEquations
+            yDot[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[i-4]-y[i])-K*(y[i+2]-y[i]))/e
+            yDot[i+1]=y[i]+a
+            yDot[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[i-2]-y[i+2])-K*(y[i]-y[i+2]))/e
+            yDot[i+3]=y[i+2]+a
+    return yDot
 
-"""elif (i == 2*N-2):
-            sysEquations[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[i-2]-y[i]+y[0]))/e
-            sysEquations[i+1]=y[i]+a"""
-
-#Calculations
+# Calculations --------------------------------------------------
 t0 = tm.time()
-
 solution = Radau(f, 0, y0, T, rtol=0.0001, atol=0.0001, first_step=0.000001)
 state = []
 time = []
-stepSize = []
 while(True):
     time.append(solution.t)
     state.append(solution.y)
     if (solution.status == 'finished'):
         break
     solution.step()
-    stepSize.append(solution.step_size)
-
 t1 = tm.time()
 
-#Propagation speed calculations
+# Propagation speed calculations --------------------------------------------------
 tMax, sMax = find_max(state)
 target = np.array(account_cycles(tMax, tMax[0]))
 suppressed = np.array(account_cycles(sMax, sMax[0]))
@@ -96,7 +98,7 @@ t_fit = [t*tRegression.slope + tRegression.intercept for t in time]
 s_fit = [t*tRegression.slope + sRegression.intercept for t in time]
 t2 = tm.time()
 
-#Final drawings
+# Final drawings --------------------------------------------------
 i = int(len(time)/5)
 print("Time elapsed during the calculation:", t1 - t0)
 print("Time elapsed for speed calculations:", t2 - t1)
@@ -107,26 +109,28 @@ print(sRegression)
 #print("\nRegression result:\nSlope:\t",regression.slope,"\nIntercept:\t", regression.intercept,"\nR-value:\t",regression.rvalue)
 fig, (ax1, ax2) = plt.subplots(1, 2)
 ax1.grid()
-ax1.set_title("State of the sistem at time "+str(i)+"/"+str(len(time)))
-ax1.plot(state[i][::4], 'o', markersize=2)
-ax1.plot(state[i][2::4], 'o', markersize=2)
+#ax1.set_title("State of the sistem at time "+str(i)+"/"+str(len(time)))
+#ax1.plot(state[i][::4], 'o', markersize=2)
+#ax1.plot(state[i][2::4], 'o', markersize=2)
+ax1.eventplot(find_spikes(state,time), orientation='vertical', linelengths=0.5)
+ax2.set_title("Dynamic of the 5th neuron")
 ax2.grid()
 ax2.plot(time, [row[20] for row in state])
 ax2.plot(time, [row[22] for row in state])
 plt.figure()
 plt.title("Wave fronts propagation")
 plt.grid()
-plt.plot(time, target, 'c+')
-plt.plot(time, t_fit, 'c')
-plt.plot(time, suppressed, 'm+')
-plt.plot(time, s_fit, 'm')
+plt.plot(time, tMax, '+')
+#plt.plot(time, t_fit)
+plt.plot(time, sMax, '+')
+#plt.plot(time, s_fit)
 #plt.figure()
 #plt.title("Initial conditions")
 #plt.plot(y0[::4], 'x')
 #plt.plot(y0[2::4], 'x')
 #plt.show()
 
-#Animation
+# Animation --------------------------------------------------
 fig, ax = plt.subplots()
 ax.set_xlim(0, 100)
 ax.set_ylim(-5, 5)
