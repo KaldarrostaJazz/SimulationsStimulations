@@ -9,12 +9,12 @@ from scipy.stats import linregress
 
 # Fixed parameters --------------------------------------------------
 e = 0.01
-a = 1.1
-T = 25
+a = 0.7
+T = 20
 # Parameters --------------------------------------------------
 N = 100
-J = 0.05
-K = 0.1
+J = 0.5
+K = 1.5
 
 # Some utilities --------------------------------------------------
 def find_max(vector_state):
@@ -39,13 +39,12 @@ def account_cycles(vector, prev):
     return resultArray
 def find_spikes(vector_state, vector_time):
     resultArray = []
-    for i in range(len(vector_state), 4):
-        i_neuron = [row[i] for row in vector_state]
+    for state in vector_state[::4]:
         indices = []
-        for x in i_neuron:
-            if (x > 2.5):
-                indices.append(i_neuron.index(x))
-        resultArray.append([vector_time[j] for j in indices])
+        for x in state:
+            if (x > 1.5):
+                indices.append(state.tolist().index(x))
+        resultArray.append([vector_time[i] for i in indices])
     return resultArray
 
 # Initial state and ODEs of the system --------------------------------------------------
@@ -87,6 +86,7 @@ while(True):
         break
     solution.step()
 t1 = tm.time()
+spikes = find_spikes(state,time)
 
 # Propagation speed calculations --------------------------------------------------
 tMax, sMax = find_max(state)
@@ -106,36 +106,47 @@ print("Dimesion of the system:\t", solution.n, "\nNumber of neurons per annulus:
 print("Time:\t",T,"s\nTime steps:\t", len(time), "\nPlotted at:\t", i)
 print(tRegression)
 print(sRegression)
-#print("\nRegression result:\nSlope:\t",regression.slope,"\nIntercept:\t", regression.intercept,"\nR-value:\t",regression.rvalue)
-fig, (ax1, ax2) = plt.subplots(1, 2)
+
+fig1, (ax1, ax2) = plt.subplots(1, 2)
+fig1.suptitle("Neurons activity")
 ax1.grid()
+ax1.set_title("Raster plot of the spikes (V > 1.5)")
+ax1.set_xlabel("Neurons")
+ax1.set_ylabel("Time")
 #ax1.set_title("State of the sistem at time "+str(i)+"/"+str(len(time)))
 #ax1.plot(state[i][::4], 'o', markersize=2)
 #ax1.plot(state[i][2::4], 'o', markersize=2)
-ax1.eventplot(find_spikes(state,time), orientation='vertical', linelengths=0.5)
-ax2.set_title("Dynamic of the 5th neuron")
+ax1.eventplot(spikes, orientation='vertical', linelengths=0.5)
 ax2.grid()
-ax2.plot(time, [row[20] for row in state])
-ax2.plot(time, [row[22] for row in state])
-plt.figure()
-plt.title("Wave fronts propagation")
-plt.grid()
-plt.plot(time, tMax, '+')
-#plt.plot(time, t_fit)
-plt.plot(time, sMax, '+')
-#plt.plot(time, s_fit)
-#plt.figure()
-#plt.title("Initial conditions")
-#plt.plot(y0[::4], 'x')
-#plt.plot(y0[2::4], 'x')
-#plt.show()
+ax2.set_title("Dynamic of the 50th neuron")
+ax2.set_xlabel("Time")
+ax2.set_ylabel("Voltage")
+ax2.plot(time, [row[200] for row in state])
+ax2.plot(time, [row[202] for row in state])
+
+fig2, (ax3,ax4) = plt.subplots(1,2)
+ax3.grid()
+ax3.title("Wave fronts propagation")
+ax3.set_xlabel("Time")
+ax3.set_ylabel("Position along the annulus (+100=n)")
+ax3.plot(time, target, '+')
+ax3.plot(time, t_fit)
+ax3.plot(time, suppressed, '+')
+ax3.plot(time, s_fit)
+ax4.title("Initial conditions")
+ax4.set_xlabel("Neuron")
+ax4.set_ylabel("Voltage")
+ax4.plot(y0[::4], 'x')
+ax4.plot(y0[2::4], 'x')
+
+plt.show()
 
 # Animation --------------------------------------------------
-fig, ax = plt.subplots()
+fig3, ax = plt.subplots()
 ax.set_xlim(0, 100)
 ax.set_ylim(-5, 5)
 ax.grid()
-fig.suptitle("Soliton wave animation")
+fig3.suptitle("Soliton wave animation")
 line1 = ax.plot()
 def init():
     return line1
@@ -147,9 +158,8 @@ def update(frame, data):
     ax.plot(data[frame][::4], 'o', markersize=3)
     ax.plot(data[frame][2::4], 'o', markersize=3)
 animation = FuncAnimation(fig, partial(update,data=state), frames=range(len(state)), init_func=init, interval=10)
-#Writer = writers['ffmpeg']
-#writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
-#animation.save('SolitonWave.mp4', writer=writer)
+Writer = writers['pillow']
+writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
+animation.save('SolitonWave.gif', writer=writer)
 t3 = tm.time()
 print("Time elapsed to draw the graphs and save the animations:\t",t3-t2)
-plt.show()
