@@ -6,15 +6,16 @@ import time as tm
 from math import exp
 from scipy.integrate import Radau
 from scipy.stats import linregress
+from scipy.sparse import csr_array
 
 # Fixed parameters --------------------------------------------------
 e = 0.01
-a = 0.7
+a = 1.3
 T = 10
 # Parameters --------------------------------------------------
 N = 100
 J = 0.5
-K = 1.0
+K = 1.5
 
 # Some utilities --------------------------------------------------
 def find_max(vector_state):
@@ -47,7 +48,7 @@ def find_spikes(vector_state, vector_time):
         resultArray.append([vector_time[i] for i in indices])
     return resultArray
 
-# Initial state and ODEs of the system --------------------------------------------------
+# Initial state, jacobian and ODEs of the system --------------------------------------------------
 mean = N/2
 sigma = N/100
 restState = [-a, -a + a*a*a/3, -a, -a + a*a*a/3]
@@ -73,10 +74,23 @@ def f(t, y):
             yDot[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[i-2]-y[i+2])-K*(y[i]-y[i+2]))/e
             yDot[i+3]=y[i+2]+a
     return yDot
+def jacobian(t, y):
+    indptr = np.array([0,4,5,9,10])
+    ind_module = np.array([0,4,5,6,4,2,4,6,7,6])
+    indices = np.array([0,1,2,4,0,0,2,3,6,2])
+    data = np.array([1-y[0]*y[0]-J+K, -1, -K, J, 1, -K, 1-y[2]*y[2]-J+K, -1, J, 1])
+    for i in range(N-1):
+        module = np.array([J, 1-y[i]*y[i]-J+K, -1, -K, 1, J, -K, 1-y[i+2]*y[i+2]-J+K, -1, 1])
+        ptr_append = np.array([indptr[-1]+4,indptr[-1]+5,indptr[-1]+9,indptr[-1]+10])
+        ind_append = ind_module + 4*i
+        data = np.append(data, module)
+        indptr = np.append(indptr, ptr_append)
+        indices = np.append(indices, ind_append)
+    return csr_array((data,indices,indptr),shape=(4*N,4*N))
 
 # Calculations --------------------------------------------------
 t0 = tm.time()
-solution = Radau(f, 0, y0, T, rtol=0.0001, atol=0.0001, first_step=0.000001)
+solution = Radau(f, 0, y0, T, rtol=0.0001, atol=0.0001, jac=jacobian, first_step=0.000001)
 state = []
 time = []
 while(True):
