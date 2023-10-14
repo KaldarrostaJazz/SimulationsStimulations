@@ -11,11 +11,11 @@ from scipy.sparse import csr_array
 # Fixed parameters --------------------------------------------------
 e = 0.01
 a = 1.3
-T = 10
+T = 25
 # Parameters --------------------------------------------------
 N = 100
 J = 0.5
-K = 1.5
+K = 1.0
 
 # Some utilities --------------------------------------------------
 def find_max(vector_state):
@@ -37,15 +37,6 @@ def account_cycles(vector, prev):
         else:
             resultArray.append(x)
         prev = x
-    return resultArray
-def find_spikes(vector_state, vector_time):
-    resultArray = []
-    for state in vector_state:
-        indices = []
-        for x in state:
-            if (x > 2):
-                indices.append(state.tolist().index(x))
-        resultArray.append([vector_time[i] for i in indices])
     return resultArray
 
 # Initial state, jacobian and ODEs of the system --------------------------------------------------
@@ -100,7 +91,6 @@ while(True):
         break
     solution.step()
 t1 = tm.time()
-spikes = find_spikes(state,time)
 
 # Propagation speed calculations --------------------------------------------------
 tMax, sMax = find_max(state)
@@ -122,17 +112,13 @@ print(tRegression)
 print(sRegression)
 
 fig1, (ax1, ax2) = plt.subplots(1, 2)
-fig1.suptitle("Neurons activity")
+fig1.suptitle("50th neuron activity")
 ax1.grid()
-#ax1.set_title("Raster plot of the spikes (V > 1.5)")
-ax1.set_title("State of the sistem at time "+str(i)+"/"+str(len(time)))
-ax1.set_xlabel("Neurons")
-ax1.set_ylabel("Voltage")
-ax1.plot(state[i][::4], 'o', markersize=2)
-ax1.plot(state[i][2::4], 'o', markersize=2)
-#ax1.eventplot(spikes, orientation='vertical', linelengths=0.5)
+ax1.set_xlabel("Voltage")
+ax1.set_ylabel("Spike adptation variable")
+ax1.plot([row[200] for row in state], [row[201] for row in state])
+ax1.plot([row[202] for row in state], [row[203] for row in state])
 ax2.grid()
-ax2.set_title("Dynamic of the 50th neuron")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("Voltage")
 ax2.plot(time, [row[200] for row in state])
@@ -143,37 +129,38 @@ ax3.grid()
 ax3.set_title("Wave fronts propagation")
 ax3.set_xlabel("Time")
 ax3.set_ylabel("Position along the annulus (n+100=n)")
-ax3.plot(time, target, 'b+')
-ax3.plot(time, t_fit, 'b')
-ax3.plot(time, suppressed, 'r+')
-ax3.plot(time, s_fit, 'r')
+ax3.plot(time, target, marker='x', linewidth=0, color='tab:blue')
+ax3.plot(time, t_fit, color='tab:blue', linestyle='dashed')
+ax3.plot(time, suppressed, marker='x', linewidth=0, color='tab:orange')
+ax3.plot(time, s_fit, color='tab:orange', linestyle='dashed')
 ax4.set_title("Initial conditions")
 ax4.set_xlabel("Neuron")
 ax4.set_ylabel("Voltage")
 ax4.plot(y0[::4], 'x')
 ax4.plot(y0[2::4], 'x')
 
-plt.show()
+#plt.show()
 
 # Animation --------------------------------------------------
-fig3, ax = plt.subplots()
-ax.set_xlim(0, 100)
-ax.set_ylim(-5, 5)
-ax.grid()
-fig3.suptitle("Soliton wave animation")
-line1 = ax.plot()
-def init():
-    return line1
-def update(frame, data):
-    ax.clear()
-    ax.set_xlim(0, 100)
-    ax.set_ylim(-5, 5)
-    ax.grid()
-    ax.plot(data[frame][::4], 'o', markersize=3)
-    ax.plot(data[frame][2::4], 'o', markersize=3)
-animation = FuncAnimation(fig3, partial(update,data=state), frames=range(len(state)), init_func=init, interval=10)
-Writer = writers['ffmpeg']
-writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
-animation.save('SolitonWave.mp4', writer=writer)
+#fig3, ax = plt.subplots()
+#ax.set_xlim(0, 100)
+#ax.set_ylim(-5, 5)
+#ax.grid()
+#fig3.suptitle("Soliton wave animation")
+#line1 = ax.plot()
+#def init():
+#    return line1
+#def update(frame, data):
+#    ax.clear()
+#    ax.set_xlim(0, 100)
+#    ax.set_ylim(-5, 5)
+#    ax.grid()
+#    ax.plot(data[frame][::4], 'o', markersize=3)
+#    ax.plot(data[frame][2::4], 'o', markersize=3)
+#animation = FuncAnimation(fig3, partial(update,data=state), frames=range(len(state)), init_func=init, interval=10)
+#Writer = writers['ffmpeg']
+#writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
+#animation.save('SolitonWave.mp4', writer=writer)
 t3 = tm.time()
-print("Time elapsed to draw the graphs and save the animations:\t",t3-t2)
+print("Time elapsed to draw the graphs and save the animations:",t3-t2)
+plt.show()
