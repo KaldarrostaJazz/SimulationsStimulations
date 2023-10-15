@@ -11,11 +11,11 @@ from scipy.sparse import csr_array
 # Fixed parameters --------------------------------------------------
 e = 0.01
 a = 1.3
-T = 25
+T = 10
 # Parameters --------------------------------------------------
 N = 100
 J = 0.5
-K = 1.0
+K = 1.5
 
 # Some utilities --------------------------------------------------
 def find_max(vector_state):
@@ -103,11 +103,10 @@ s_fit = [t*tRegression.slope + sRegression.intercept for t in time]
 t2 = tm.time()
 
 # Final drawings --------------------------------------------------
-i = int(3*len(time)/5)
 print("Time elapsed during the calculation:", t1 - t0)
 print("Time elapsed for speed calculations:", t2 - t1)
 print("Dimesion of the system:\t", solution.n, "\nNumber of neurons per annulus:\t", N)
-print("Time:\t",T,"s\nTime steps:\t", len(time), "\nPlotted at:\t", i)
+print("Time:",T,"s\tTime steps:", len(time))
 print(tRegression)
 print(sRegression)
 
