@@ -1,3 +1,4 @@
+from threadpoolctl import threadpool_limits
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, writers
 from functools import partial
@@ -7,6 +8,8 @@ from math import exp
 from scipy.integrate import Radau
 from scipy.stats import linregress
 from scipy.sparse import csr_array
+#import os
+#os.environ['OPENBLAS_NUM_THREADS']='1'
 
 # Fixed parameters --------------------------------------------------
 e = 0.01
@@ -55,14 +58,14 @@ def f(t, y):
     yDot = np.ndarray(4*N)
     for i in range(0, len(y), 4):
         if (i == 0):
-            yDot[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[4*N-4]-y[i])-K*(y[i+2]-y[i]))/e
+            yDot[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[4*N-4]-y[i])-K*(y[i+2]+y[4*N-2]-2*y[i]))/e
             yDot[i+1]=y[i]+a
-            yDot[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[4*N-2]-y[i+2])-K*(y[i]-y[i+2]))/e
+            yDot[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[4*N-2]-y[i+2])-K*(y[i]+y[4*N-4]-2*y[i+2]))/e
             yDot[i+3]=y[i+2]+a
         else:
-            yDot[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[i-4]-y[i])-K*(y[i+2]-y[i]))/e
+            yDot[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[i-4]-y[i])-K*(y[i+2]+y[i-2]-2*y[i]))/e
             yDot[i+1]=y[i]+a
-            yDot[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[i-2]-y[i+2])-K*(y[i]-y[i+2]))/e
+            yDot[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[i-2]-y[i+2])-K*(y[i]+y[i-4]-2*y[i+2]))/e
             yDot[i+3]=y[i+2]+a
     return yDot
 def jacobian(t, y):
@@ -81,7 +84,8 @@ def jacobian(t, y):
 
 # Calculations --------------------------------------------------
 t0 = tm.time()
-solution = Radau(f, 0, y0, T, rtol=0.0001, atol=0.0001, jac=jacobian, first_step=0.000001)
+with threadpool_limits(limits=1, user_api='blas'):
+    solution = Radau(f, 0, y0, T, rtol=0.0001, atol=0.0001, jac=jacobian, first_step=0.000001)
 state = []
 time = []
 while(True):
@@ -128,10 +132,10 @@ ax3.grid()
 ax3.set_title("Wave fronts propagation")
 ax3.set_xlabel("Time")
 ax3.set_ylabel("Position along the annulus (n+100=n)")
-ax3.plot(time, target, marker='x', linewidth=0, color='tab:blue')
-ax3.plot(time, t_fit, color='tab:blue', linestyle='dashed')
-ax3.plot(time, suppressed, marker='x', linewidth=0, color='tab:orange')
-ax3.plot(time, s_fit, color='tab:orange', linestyle='dashed')
+ax3.plot(time, target, marker='o', linewidth=0, color='tab:blue', markersize=1)
+ax3.plot(time, t_fit, color='black', linestyle='dashed')
+ax3.plot(time, suppressed, marker='o', linewidth=0, color='tab:orange', markersize=1)
+ax3.plot(time, s_fit, color='black', linestyle='dashed')
 ax4.set_title("Initial conditions")
 ax4.set_xlabel("Neuron")
 ax4.set_ylabel("Voltage")
@@ -141,22 +145,22 @@ ax4.plot(y0[2::4], 'x')
 #plt.show()
 
 # Animation --------------------------------------------------
-#fig3, ax = plt.subplots()
-#ax.set_xlim(0, 100)
-#ax.set_ylim(-5, 5)
-#ax.grid()
-#fig3.suptitle("Soliton wave animation")
-#line1 = ax.plot()
-#def init():
-#    return line1
-#def update(frame, data):
-#    ax.clear()
-#    ax.set_xlim(0, 100)
-#    ax.set_ylim(-5, 5)
-#    ax.grid()
-#    ax.plot(data[frame][::4], 'o', markersize=3)
-#    ax.plot(data[frame][2::4], 'o', markersize=3)
-#animation = FuncAnimation(fig3, partial(update,data=state), frames=range(len(state)), init_func=init, interval=10)
+fig3, ax = plt.subplots()
+ax.set_xlim(0, 100)
+ax.set_ylim(-5, 5)
+ax.grid()
+fig3.suptitle("Soliton wave animation")
+line1 = ax.plot()
+def init():
+    return line1
+def update(frame, data):
+    ax.clear()
+    ax.set_xlim(0, 100)
+    ax.set_ylim(-5, 5)
+    ax.grid()
+    ax.plot(data[frame][::4], 'o', markersize=3)
+    ax.plot(data[frame][2::4], 'o', markersize=3)
+animation = FuncAnimation(fig3, partial(update,data=state), frames=range(len(state)), init_func=init, interval=10)
 #Writer = writers['ffmpeg']
 #writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
 #animation.save('SolitonWave.mp4', writer=writer)
