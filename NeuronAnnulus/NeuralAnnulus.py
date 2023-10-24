@@ -12,7 +12,7 @@ from scipy.sparse import csr_array
 # Fixed parameters --------------------------------------------------
 e = 0.01
 a = 1.3
-T = 25
+T = 20
 # Parameters --------------------------------------------------
 N = 100
 J = 1.5
@@ -47,43 +47,64 @@ restState = [-a, -a + a*a*a/3, -a, -a + a*a*a/3]
 
 y0 = np.ndarray(4*N, float)
 for i in range(0, len(y0), 4):
-    y0[i] = 2*exp(-0.5*(i/4-mean/2)*(i/4-mean/2)/(sigma*sigma)) + restState[0]
+    y0[i] = restState[0]#2*exp(-0.5*(i/4-mean/2)*(i/4-mean/2)/(sigma*sigma)) + 
     y0[i+1] = restState[1]
-    y0[i+2] = 2*exp(-0.5*(i/4-3*mean/2)*(i/4-3*mean/2)/(sigma*sigma)) + restState[2]
+    y0[i+2] = restState[2]#2*exp(-0.5*(i/4-3*mean/2)*(i/4-3*mean/2)/(sigma*sigma)) + 
     y0[i+3] = restState[3]
 
 def f(t, y):
     yDot = np.ndarray(4*N)
     for i in range(0, len(y), 4):
         if (i == 0):
-            yDot[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[4*N-4]-y[i])-K*(y[i+2]-y[i]))/e
+            yDot[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[4*N-4]+y[i+4]-2*y[i])-K*(y[i+2]-y[i])+5)/e
             yDot[i+1]=y[i]+a
-            yDot[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[4*N-2]-y[i+2])-K*(y[i]-y[i+2]))/e
+            yDot[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[4*N-2]+y[i+6]-2*y[i+2])-K*(y[i]-y[i+2])+10)/e
+            yDot[i+3]=y[i+2]+a
+        elif (i == 4*N-4):
+            yDot[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[i-4]+y[0]-2*y[i])-K*(y[i+2]-y[i])+5)/e
+            yDot[i+1]=y[i]+a
+            yDot[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[i-2]+y[2]-2*y[i+2])-K*(y[i]-y[i+2])+10)/e
             yDot[i+3]=y[i+2]+a
         else:
-            yDot[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[i-4]-y[i])-K*(y[i+2]-y[i]))/e
+            yDot[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[i-4]+y[i+4]-2*y[i])-K*(y[i+2]-y[i])+5)/e
             yDot[i+1]=y[i]+a
-            yDot[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[i-2]-y[i+2])-K*(y[i]-y[i+2]))/e
+            yDot[i+2]=(y[i+2]-y[i+2]*y[i+2]*y[i+2]/3-y[i+3]+J*(y[i-2]+y[i+6]-2*y[i+2])-K*(y[i]-y[i+2])+10)/e
             yDot[i+3]=y[i+2]+a
     return yDot
 def jacobian(t, y):
     indptr = np.array([0,4,5,9,10])
     ind_module = np.array([0,4,5,6,4,2,4,6,7,6])
-    indices = np.array([0,1,2,4,0,0,2,3,6,2])
+    indices = np.array([0,1,2,4*N-4,0,0,2,3,4*N-2,2])
     data = np.array([1-y[0]*y[0]-J+K, -1, -K, J, 1, -K, 1-y[2]*y[2]-J+K, -1, J, 1])
-    for i in range(N-1):
-        module = np.array([J, 1-y[i]*y[i]-J+K, -1, -K, 1, J, -K, 1-y[i+2]*y[i+2]-J+K, -1, 1])
+    for i in range(1,N):
+        module = np.array([J, 1-y[i*4]*y[i*4]-J+K, -1, -K, 1, J, -K, 1-y[i*4+2]*y[i*4+2]-J+K, -1, 1])
         ptr_append = np.array([indptr[-1]+4,indptr[-1]+5,indptr[-1]+9,indptr[-1]+10])
-        ind_append = ind_module + 4*i
+        ind_append = ind_module + 4*(i-1)
         data = np.append(data, module)
         indptr = np.append(indptr, ptr_append)
         indices = np.append(indices, ind_append)
     return csr_array((data,indices,indptr),shape=(4*N,4*N))
+def double_jacobian(t, y):
+    indptr = np.array([0,5,6,11,12])
+    ind_module = np.array([0,4,5,6,8,4,2,2,6,7,10,6])
+    indices = np.array([0,1,2,4,4*N-4,0,0,2,3,6,4*N-2,2])
+    data = np.array([1-y[0]*y[0]-2*J+K,-1,-K,J,J,1,-K,1-y[2]*y[2]-2*J+K,-1,J,J,1])
+    for i in range(1,N-1):
+        module = np.array([J,1-y[i*4]*y[i*4]-2*J+K,-1,-K,J,1,J,-K,1-y[i*4+2]*y[i*4+2]-2*J+K,-1,J,1])
+        ptr_append = np.array([indptr[-1]+5,indptr[-1]+6,indptr[-1]+11,indptr[-1]+12])
+        ind_append = ind_module + 4*(i-1)
+        data = np.append(data, module)
+        indptr = np.append(indptr, ptr_append)
+        indices = np.append(indices, ind_append)
+    data = np.append(data, [J,J,1-y[4*N-4]*y[4*N-4]-2*J+K,-1,-K,1,J,J,-K,1-y[4*N-2]*y[4*N-2]-2*J+K,-1,1])
+    indices = np.append(indices, [0,4*N-8,4*N-4,4*N-3,4*N-2,4*N-4,2,4*N-6,4*N-4,4*N-2,4*N-1,4*N-2])
+    indptr = np.append(indptr,[indptr[-1]+5,indptr[-1]+6,indptr[-1]+11,indptr[-1]+12])
+    return csr_array((data, indices, indptr),shape=(4*N,4*N))
 
 # Calculations --------------------------------------------------
 t0 = tm.time()
 with threadpool_limits(limits=1, user_api='blas'):
-    solution = Radau(f, 0, y0, T, rtol=0.0001, atol=0.0001, jac=jacobian, first_step=0.000001)
+    solution = Radau(f, 0, y0, T, rtol=0.0001, atol=0.0001, jac=double_jacobian, first_step=0.000001)
 state = []
 time = []
 while(True):
@@ -140,7 +161,7 @@ ax4.set_ylabel("Voltage")
 ax4.plot(y0[::4], 'x')
 ax4.plot(y0[2::4], 'x')
 
-plt.show()
+#plt.show()
 
 # Animation --------------------------------------------------
 fig3, ax = plt.subplots()
@@ -159,9 +180,9 @@ def update(frame, data):
     ax.plot(data[frame][::4], 'o', markersize=3)
     ax.plot(data[frame][2::4], 'o', markersize=3)
 animation = FuncAnimation(fig3, partial(update,data=state), frames=range(len(state)), init_func=init, interval=10)
-Writer = writers['ffmpeg']
-writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
-animation.save('SolitonWave.mp4', writer=writer)
+#Writer = writers['ffmpeg']
+#writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=10000)
+#animation.save('ConstantImpulseLonger.mp4', writer=writer)
 t3 = tm.time()
 print("Time elapsed to draw the graphs and save the animations:",t3-t2)
-#plt.show()
+plt.show()

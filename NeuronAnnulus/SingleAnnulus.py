@@ -8,16 +8,14 @@ from math import exp
 from scipy.integrate import Radau
 from scipy.stats import linregress
 from scipy.sparse import csr_array
-#import os
-#os.environ['OPENBLAS_NUM_THREADS']='1'
 
 # Fixed parameters --------------------------------------------------
 e = 0.01
 a = 1.3
-T = 10
+T = 20
 # Parameters --------------------------------------------------
 N = 100
-J = 0.06
+J = 0.5
 
 # Some utilities --------------------------------------------------
 def find_max(vector_state):
@@ -48,7 +46,6 @@ y0 = np.ndarray(2*N, float)
 for i in range(0, len(y0), 2):
     y0[i] = 2*exp(-0.5*(i/2-mean)*(i/2-mean)/(sigma*sigma)) + restState[0]
     y0[i+1] = restState[1]
-
 def f(t, y):
     yDot = np.ndarray(2*N)
     for i in range(0, len(y), 2):
@@ -84,7 +81,8 @@ while(True):
     state.append(solution.y)
     if (solution.status == 'finished'):
         break
-
+    solution.step()
+t1 = tm.time()
 # Propagation speed calculations --------------------------------------------------
 tMax = find_max(state)
 target = np.array(account_cycles(tMax, tMax[0]))
@@ -141,9 +139,9 @@ def update(frame, data):
     ax.plot(data[frame][::2], 'o', markersize=3)
     ax.plot(data[frame][1::2], 'o', markersize=3)
 animation = FuncAnimation(fig3, partial(update,data=state), frames=range(len(state)), init_func=init, interval=10)
-#Writer = writers['ffmpeg']
+#Writer = writers['pillow']
 #writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
-#animation.save('SolitonWave.mp4', writer=writer)
+#animation.save('SolitonWave.gif', writer=writer)
 t3 = tm.time()
 print("Time elapsed to draw the graphs and save the animations:",t3-t2)
 plt.show()
