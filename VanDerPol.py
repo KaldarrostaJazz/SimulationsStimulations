@@ -3,7 +3,6 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import argparse
 import time as tm
-from math import cos,sqrt,exp
 
 INTEGRATORS = ['RK45','Radau','BDF']
 t_init = tm.time()
@@ -17,6 +16,7 @@ mu = args.parameter
 tf = args.t_bound
 method = args.integrator
 y0 = np.array([float(x) for x in args.initial_state.split(',')])
+
 def van_der_pol(t,y):
     return np.array([y[1], mu*(1-y[0]*y[0])*y[1]-y[0]])
 t_start = tm.time()
