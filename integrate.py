@@ -1,3 +1,5 @@
+import numpy as np
+
 def runge_kutta(f, x0, y0, h, n):
     """
     Implements the fourth-order Runge-Kutta method for solving ODEs.
