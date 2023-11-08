@@ -1,19 +1,19 @@
 import matplotlib.pyplot as plt
 import argparse
+import numpy as np
 from math import exp, sin, pi
-from scipy.integrate import simpson
+from scipy.integrate import solve_ivp
 
 parser = argparse.ArgumentParser(prog='FitzHugh-Nagumo')
 VALID_TYPES = ['const','tri','sin','gauss']
 parser.add_argument('--type', choices=VALID_TYPES,required=True)
 parser.add_argument('-i','--impulse',default=1,type=float)
-parser.add_argument('-tc','--t_crit',default=1,type=int)
-parser.add_argument('-t','--t_bound',default=1000,type=int)
+parser.add_argument('-tc','--t_crit',default=1,type=float)
+parser.add_argument('-tf','--t_bound',default=100,type=float)
 args = parser.parse_args()
 I_ext = args.impulse
-dt = 0.1
 tc = args.t_crit
-N = args.t_bound
+tf = args.t_bound
 impulse = args.type
 
 a = 0.7
@@ -32,44 +32,31 @@ def I(time, t_crit, i_type):
             else:
                 return 0
         case 'sin':
-            return I_ext*sin(5*pi*time*dt/T)
+            return I_ext*sin(2*pi*time/T)
         case 'gauss':
             return I_ext*exp(-(time-t_crit)*(time-t_crit)/(2*2))
         case _:
             raise ValueError("results: status must be one of %r." % VALID_TYPES)
 
-def f1(x, w, I):
-    return x - x*x*x/3 - w + I
+def f(t,y):
+    y0 = y[0]-y[0]*y[0]*y[0]/3-y[1]+I(t,tc,impulse)
+    y1 = (y[0]+a-b*y[1])/T
+    return np.array([y0,y1])
 
-def f2(x, w, I):
-    return (x + a - b*w)/T
-
-x = [-1.1995]
-w = [-0.62427]
-t = [0]
-
-for i in range(N):
-    k11 = f1(x[i], w[i], I(t[i], tc, impulse))*dt
-    k12 = f2(x[i], w[i], I(t[i], tc, impulse))*dt
-    k21 = f1(x[i] + 0.5*k11, w[i] + 0.5*k12, I(t[i], tc, impulse))*dt
-    k22 = f2(x[i] + 0.5*k11, w[i] + 0.5*k12, I(t[i], tc, impulse))*dt
-    k31 = f1(x[i] + 0.5*k21, w[i] + 0.5*k22, I(t[i], tc, impulse))*dt
-    k32 = f2(x[i] + 0.5*k21, w[i] + 0.5*k22, I(t[i], tc, impulse))*dt
-    k41 = f1(x[i] + k31, w[i] + k32, I(t[i], tc, impulse))*dt
-    k42 = f2(x[i] + k31, w[i] + k32, I(t[i], tc, impulse))*dt
-    dx = (k11 + 2*k21 + 2*k31 + k41)/6
-    dw = (k12 + 2*k22 + 2*k32 + k42)/6
-    x.append(x[i] + dx)
-    w.append(w[i] + dw)
-    t.append(i*dt)
-
-integral = [simpson(x[i],t[i]) for i in range(len(t))]
+y0 = np.array([-1.1995,-0.62427])
+solution = solve_ivp(f,(0,tf),y0,'RK45')
+xes = np.linspace(-2.5,2.5,500)
+if (impulse == 'const'):
+    null_clines = np.array([[x-x*x*x/3 + I_ext for x in xes],[(x+a)/b for x in xes]])
+else:
+    null_clines = np.array([[x-x*x*x/3 for x in xes],[(x+a)/b for x in xes]])
 plt.grid()
 #plt.ylim([-2.1,2])
-plt.plot(t,x)
-plt.plot(t,integral)
-plt.plot(t, [I(i,tc,impulse) for i in t], linestyle='--')
+plt.plot(solution.t,solution.y[0],'k')
+plt.plot(solution.t, [I(i,tc,impulse) for i in solution.t], color='tab:gray', linestyle='--')
 plt.figure()
 plt.grid()
-plt.plot(x,w,color='tab:blue',marker='o',linewidth=0,markersize=2)
+plt.plot(solution.y[0],solution.y[1],color='k')
+plt.plot(xes, null_clines[0], color='tab:gray', linestyle='--')
+plt.plot(xes, null_clines[1], color='tab:gray', linestyle='--')
 plt.show()
