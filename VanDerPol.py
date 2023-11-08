@@ -2,10 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import solve_ivp
 import argparse
-import time as tm
 
 INTEGRATORS = ['RK45','Radau','BDF']
-t_init = tm.time()
 parser = argparse.ArgumentParser()
 parser.add_argument('-mu', '--parameter', type=float, default=1)
 parser.add_argument('-tf', '--t_bound',type=float, default=10)
@@ -19,10 +17,7 @@ y0 = np.array([float(x) for x in args.initial_state.split(',')])
 
 def van_der_pol(t,y):
     return np.array([y[1], mu*(1-y[0]*y[0])*y[1]-y[0]])
-t_start = tm.time()
 solution = solve_ivp(van_der_pol,(0,tf),y0,method,dense_output=True)
-t_calc = tm.time()
-print(t_start-t_init, t_calc-t_start,t_calc-t_init)
 time = solution.t
 state = solution.y
 fig, axes = plt.subplots(1,2)
@@ -31,6 +26,6 @@ axes[0].set_title("Phase plane")
 axes[1].set_title("Dynamics")
 axes[0].grid()
 axes[1].grid()
-axes[0].plot(state[0],state[1],color='tab:gray')
-axes[1].plot(time,state[0],color='tab:gray')
+axes[0].plot(state[0],state[1],color='k')
+axes[1].plot(time,state[0],color='k')
 plt.show()
