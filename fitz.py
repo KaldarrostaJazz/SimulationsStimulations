@@ -5,9 +5,9 @@ from math import exp, sin, pi
 from scipy.integrate import solve_ivp
 
 parser = argparse.ArgumentParser(prog='FitzHugh-Nagumo')
-VALID_TYPES = ['const','tri','sin','gauss']
+VALID_TYPES = ['const','tri','sin','gauss','linear']
 parser.add_argument('--type', choices=VALID_TYPES,required=True)
-parser.add_argument('-i','--impulse',default=1,type=float)
+parser.add_argument('-i','--impulse',default=7/8,type=float)
 parser.add_argument('-tc','--t_crit',default=1,type=float)
 parser.add_argument('-tf','--t_bound',default=100,type=float)
 args = parser.parse_args()
@@ -35,6 +35,8 @@ def I(time, t_crit, i_type):
             return I_ext*sin(2*pi*time/T)
         case 'gauss':
             return I_ext*exp(-(time-t_crit)*(time-t_crit)/(2*2))
+        case 'linear':
+            return I_ext*time*0.1
         case _:
             raise ValueError("results: status must be one of %r." % VALID_TYPES)
 
@@ -51,11 +53,15 @@ if (impulse == 'const'):
 else:
     null_clines = np.array([[x-x*x*x/3 for x in xes],[(x+a)/b for x in xes]])
 plt.grid()
+plt.xlabel('t (ms)')
+plt.ylabel('V')
 #plt.ylim([-2.1,2])
 plt.plot(solution.t,solution.y[0],'k')
 plt.plot(solution.t, [I(i,tc,impulse) for i in solution.t], color='tab:gray', linestyle='--')
 plt.figure()
 plt.grid()
+plt.xlabel('V')
+plt.ylabel('W')
 plt.plot(solution.y[0],solution.y[1],color='k')
 plt.plot(xes, null_clines[0], color='tab:gray', linestyle='--')
 plt.plot(xes, null_clines[1], color='tab:gray', linestyle='--')
