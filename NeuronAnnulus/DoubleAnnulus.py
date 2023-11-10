@@ -4,7 +4,6 @@ from matplotlib.animation import FuncAnimation, writers
 from functools import partial
 import numpy as np
 import time as tm
-from math import exp
 from scipy.integrate import solve_ivp
 from scipy.stats import linregress
 from scipy.sparse import csr_array
@@ -31,8 +30,6 @@ I1 = 0.1
 I2 = 0.61
 
 # Initial state, jacobian and ODEs of the system --------------------------------------------------
-mean = N/2
-sigma = N/100
 restState = [-1.199408035, -0.624260044, -1.199408035, -0.624260044]
 
 y0 = np.ndarray(4*N, float)
