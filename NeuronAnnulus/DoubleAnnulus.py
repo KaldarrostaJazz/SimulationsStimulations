@@ -12,10 +12,10 @@ import argparse
 
 # Parsing the command line --------------------------------------------------
 parser = argparse.ArgumentParser()
-parser.add_argument('-J', type=float,default=1,help='Synaptic strenght J')
-parser.add_argument('-K', type=float,default=1,help='Inhibition strenght K')
+parser.add_argument('-J', type=float,default=0.2,help='Synaptic strenght J')
+parser.add_argument('-K', type=float,default=0.4,help='Inhibition strenght K')
 parser.add_argument('-N',type=int,default=100,help='Number of neurons per annulus')
-parser.add_argument('-T',type=float,default=25,help='Integration final time')
+parser.add_argument('-T',type=float,default=250,help='Integration final time')
 args = parser.parse_args()
 
 # Fixed parameters --------------------------------------------------
@@ -28,7 +28,7 @@ N = args.N
 J = args.J
 K = args.K
 I1 = 0.1
-I2 = 0.15
+I2 = 0.61
 
 # Initial state, jacobian and ODEs of the system --------------------------------------------------
 mean = N/2
@@ -38,9 +38,9 @@ restState = [-1.199408035, -0.624260044, -1.199408035, -0.624260044]
 y0 = np.ndarray(4*N, float)
 lintime = np.linspace(0,T,int(T*5))
 for i in range(0, len(y0), 4):
-    y0[i] = restState[0]# + 5*exp(-0.5*(i/4-mean/2)*(i/4-mean/2)/(sigma*sigma))
+    y0[i] = restState[0]
     y0[i+1] = restState[1]
-    y0[i+2] = restState[2]# + 5*exp(-0.5*(i/4-3*mean/2)*(i/4-3*mean/2)/(sigma*sigma))
+    y0[i+2] = restState[2]
     y0[i+3] = restState[3]
 
 def f(t, y):
@@ -63,19 +63,6 @@ def f(t, y):
             yDot[i+3]=(y[i+2]+a-b*y[i+3])*e
     return yDot
 def jacobian(t, y):
-    indptr = np.array([0,4,5,9,10])
-    ind_module = np.array([0,4,5,6,4,2,4,6,7,6])
-    indices = np.array([0,1,2,4*N-4,0,0,2,3,4*N-2,2])
-    data = np.array([1-y[0]*y[0]-J+K, -1, -K, J, 1, -K, 1-y[2]*y[2]-J+K, -1, J, 1])
-    for i in range(1,N):
-        module = np.array([J, 1-y[i*4]*y[i*4]-J+K, -1, -K, 1, J, -K, 1-y[i*4+2]*y[i*4+2]-J+K, -1, 1])
-        ptr_append = np.array([indptr[-1]+4,indptr[-1]+5,indptr[-1]+9,indptr[-1]+10])
-        ind_append = ind_module + 4*(i-1)
-        data = np.append(data, module)
-        indptr = np.append(indptr, ptr_append)
-        indices = np.append(indices, ind_append)
-    return csr_array((data,indices,indptr),shape=(4*N,4*N))
-def double_jacobian(t, y):
     indptr = np.array([0,5,7,12,14])
     ind_module = np.array([0,4,5,6,8,4,5,2,2,6,7,10,6,7])
     indices = np.array([0,1,2,4,4*N-4,0,1,0,2,3,6,4*N-2,2,3])
@@ -95,7 +82,7 @@ def double_jacobian(t, y):
 # Calculations --------------------------------------------------
 t0 = tm.time()
 with threadpool_limits(limits=1, user_api='blas'):
-    solution = solve_ivp(f,(0,T),y0,'Radau',dense_output=True,jac=double_jacobian, rtol=0.0001, atol=0.0001, first_step=0.000001)
+    solution = solve_ivp(f,(0,T),y0,'Radau',dense_output=True,jac=jacobian, rtol=0.0001, atol=0.0001, first_step=0.000001)
 t1 = tm.time()
 state = solution.y
 time = solution.t
