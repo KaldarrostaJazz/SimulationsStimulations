@@ -10,9 +10,10 @@ from scipy.stats import linregress
 from scipy.sparse import csr_array
 
 # Fixed parameters --------------------------------------------------
-e = 0.01
-a = 1.3
-T = 20
+e = 0.08
+a = 0.7
+b = 0.8
+T = 200
 # Parameters --------------------------------------------------
 N = 100
 J = 0.5
@@ -30,7 +31,7 @@ def account_cycles(vector, prev):
     for x in vector[1::]:
         if (x < prev):
             while (x < prev):
-                x += 100
+                x += N
             resultArray.append(x)
         else:
             resultArray.append(x)
@@ -40,7 +41,7 @@ def account_cycles(vector, prev):
 # Initial state, jacobian and ODEs of the system --------------------------------------------------
 mean = N/2
 sigma = N/100
-restState = [-a, -a + a*a*a/3]
+restState = [-1.199408035, -0.624260044]
 
 y0 = np.ndarray(2*N, float)
 for i in range(0, len(y0), 2):
@@ -50,20 +51,20 @@ def f(t, y):
     yDot = np.ndarray(2*N)
     for i in range(0, len(y), 2):
         if (i == 0):
-            yDot[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[2*N-2]-y[i]))/e
-            yDot[i+1]=y[i]+a
+            yDot[i]=y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[2*N-2]-y[i])
+            yDot[i+1]=(y[i]+a-b*y[i+1])*e
         else:
-            yDot[i]=(y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[i-2]-y[i]))/e
-            yDot[i+1]=y[i]+a
+            yDot[i]=y[i]-y[i]*y[i]*y[i]/3-y[i+1]+J*(y[i-2]-y[i])
+            yDot[i+1]=(y[i]+a-b*y[i+1])*e
     return yDot
 def jacobian(t, y):
-    indptr = np.array([0,3,4])
-    ind_module = np.array([0,2,3,2])
-    indices = np.array([0,1,2,0])
-    data = np.array([1-y[0]*y[0]-J, -1, J, 1])
+    indptr = np.array([0,3,5])
+    ind_module = np.array([0,2,3,2,3])
+    indices = np.array([0,1,2,0,1])
+    data = np.array([1-y[0]*y[0]-J, -1, J, 1,-b])
     for i in range(N-1):
-        module = np.array([J, 1-y[i]*y[i]-J, -1, 1])
-        ptr_append = np.array([indptr[-1]+3,indptr[-1]+4])
+        module = np.array([J, 1-y[i]*y[i]-J, -1, 1,-b])
+        ptr_append = np.array([indptr[-1]+3,indptr[-1]+5])
         ind_append = ind_module + 2*i
         data = np.append(data, module)
         indptr = np.append(indptr, ptr_append)
@@ -112,7 +113,7 @@ fig2, (ax3,ax4) = plt.subplots(1,2)
 ax3.grid()
 ax3.set_title("Wave fronts propagation")
 ax3.set_xlabel("Time")
-ax3.set_ylabel("Position along the annulus (n+100=n)")
+ax3.set_ylabel("Position along the annulus (n+N=n)")
 ax3.plot(time, target, marker='o', linewidth=0, color='tab:blue', markersize=1)
 ax3.plot(time, t_fit, color='black', linestyle='dashed')
 ax4.set_title("Initial conditions")
@@ -124,7 +125,7 @@ ax4.plot(y0[::2], 'x')
 
 # Animation --------------------------------------------------
 fig3, ax = plt.subplots()
-ax.set_xlim(0, 100)
+ax.set_xlim(0, N)
 ax.set_ylim(-5, 5)
 ax.grid()
 fig3.suptitle("Soliton wave animation")
@@ -133,7 +134,7 @@ def init():
     return line1
 def update(frame, data):
     ax.clear()
-    ax.set_xlim(0, 100)
+    ax.set_xlim(0, N)
     ax.set_ylim(-5, 5)
     ax.grid()
     ax.plot(data[frame][::2], 'o', markersize=3)
