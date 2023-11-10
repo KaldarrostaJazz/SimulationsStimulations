@@ -28,4 +28,4 @@ def runge_kutta(f, x0, y0, h, n):
         k4 = h * f(x + h, y[-1] + k3)
         y.append(y[-1] + (1 / 6) * (k1 + 2 * k2 + 2 * k3 + k4))
         x += h
-    return y
+    return np.array(y)
