@@ -26,8 +26,8 @@ T = args.T
 N = args.N
 J = args.J
 K = args.K
-I1 = 0.1
-I2 = 0.61
+I1 = 0.75
+I2 = 0.8
 
 # Initial state, jacobian and ODEs of the system --------------------------------------------------
 restState = [-1.199408035, -0.624260044, -1.199408035, -0.624260044]
@@ -89,33 +89,24 @@ dense_state = np.array([solution.sol(t) for t in lintime])
 print("Time elapsed during the calculation:", t1 - t0)
 print("Time:",T,"s\tTime steps:", len(time))
 
-fig1, (ax1, ax2) = plt.subplots(1, 2)
-fig1.suptitle("50th neuron activity")
+fig1, (ax1, ax2) = plt.subplots(1, 2,figsize=(10.2,5.1))
+fig1.suptitle("Neurons activity.\nJ="+str(J)+" K="+str(K))
 ax1.grid()
-ax1.set_xlabel("Voltage")
-ax1.set_ylabel("Spike adptation variable")
-ax1.plot(state[200], state[201])
-ax1.plot(state[202], state[203])
+ax1.set_title("25th neurons")
+ax1.set_xlabel("Time")
+ax1.set_ylabel("Voltage")
+ax1.plot(time, state[100],'k',label='Anello A, $I_a$='+str(I1))
+ax1.plot(time, state[102],'k--',label='Anello B, $I_b$='+str(I2))
 ax2.grid()
+ax2.set_title("75th neurons")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("Voltage")
-ax2.plot(time, state[200])
-ax2.plot(time, state[202])
-
-fig2, ax3 = plt.subplots()
-ax3.set_title("Initial conditions")
-ax3.set_xlabel("Neuron")
-ax3.set_ylabel("Voltage")
-ax3.plot(y0[::4], 'x')
-ax3.plot(y0[2::4], 'x')
-
-#plt.show()
+ax2.plot(time, state[300],'k')
+ax2.plot(time, state[302],'k--')
+fig1.legend()
 
 # Animation --------------------------------------------------
-fig3, ax = plt.subplots()
-ax.set_xlim(0, N)
-ax.set_ylim(-5, 5)
-ax.grid()
+fig3, ax = plt.subplots(figsize=(10.2,5.1))
 fig3.suptitle("Soliton wave animation")
 line1 = ax.plot()
 def init():
@@ -126,9 +117,12 @@ def update(frame, data):
     ax.set_xlim(0, N)
     ax.set_ylim(-5, 5)
     ax.grid()
+    ax.set_xlabel("Neuron index (1-"+str(N)+')')
+    ax.set_ylabel("Voltage")
     ax.text(40,3.5,text)
-    ax.plot(data[frame][::4], 'o', markersize=3)
-    ax.plot(data[frame][2::4], 'o', markersize=3)
+    ax.plot(data[frame][::4], 'o', markersize=3,color='tab:red',label='Anello A')
+    ax.plot(data[frame][2::4], 'o', markersize=3,color='tab:green',label='Anello B')
+    fig3.legend()
 animation = FuncAnimation(fig3, partial(update,data=dense_state),frames=range(len(dense_state)), init_func=init, interval=10)
 #Writer = writers['ffmpeg']
 #writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=10000)
