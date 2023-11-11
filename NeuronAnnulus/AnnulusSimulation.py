@@ -1,7 +1,6 @@
 import multiprocessing
 from threadpoolctl import threadpool_limits
 import numpy as np
-import time as tm
 from scipy.integrate import solve_ivp
 from scipy.sparse import csr_array
 import argparse
@@ -14,7 +13,6 @@ parser.add_argument('-N',type=int,default=100,help='Number of neurons per annulu
 parser.add_argument('-T',type=float,default=250,help='Integration final time')
 args = parser.parse_args()
 
-print('Initialing the variables')
 # Fixed parameters --------------------------------------------------
 e = 0.08
 a = 0.7
@@ -28,7 +26,7 @@ K = args.K
 # Initial state, jacobian and ODEs of the system --------------------------------------------------
 restState = [-1.199408035, -0.624260044, -1.199408035, -0.624260044]
 y0 = np.ndarray(4*N, float)
-lintime = np.linspace(0,T,int((T+1)*5))
+lintime = np.linspace(0,T,int(T*5),endpoint=False)
 for i in range(0, len(y0), 4):
     y0[i] = restState[0]
     y0[i+1] = restState[1]
@@ -71,66 +69,31 @@ def jacobian(t, y,I1,I2):
     indptr = np.append(indptr,[indptr[-1]+5,indptr[-1]+7,indptr[-1]+12,indptr[-1]+14])
     return csr_array((data, indices, indptr),shape=(4*N,4*N))
 
-def find_periods(all_periods):
-    lenghts = [len(times) for times in all_periods]
-    L = min(lenghts)
-    times_1 = []
-    times_2 = []
-    for times in all_periods[::2]:
-        sum_i=0
-        for i in range(L):
-            sum_i += times[i]
-        times_1.append(sum_i/L)
-    for times in all_periods[1::2]:
-        sum_i=0
-        for i in range(L):
-            sum_i += times[i]
-        times_2.append(sum_i/L)
-    print(times_1,times_2)
-    array_2 = np.subtract(times_2, times_1)
-    array_1 = np.subtract(times_2[1::],times_1[:-1])
-    return [array_1,array_2]
-
-def close_to(x,y):
-    if (abs(x-y) < 0.0001):
-        return True
-    else:
-        return False
-
 # Calculations --------------------------------------------------
-print('Starting calculations')
-print('###################################################')
-t0 = tm.time()
+print('I1,I2,T1,T2')
+I_ref=0.88
 def simulation(I):
     with threadpool_limits(limits=1, user_api='blas'):
-        solution = solve_ivp(f,(0,T),y0,'Radau',dense_output=True,args=(0.1,I),jac=jacobian, rtol=0.0001, atol=0.0001, first_step=0.000001)
-    dense_state = np.array([solution.sol(t) for t in lintime])
-    all_periods = []
-    for i in range(int(N)):
-        state_i = [row[i*2] for row in dense_state]
-        times = []
-        for j in range(1,len(state_i)-1):
-            if (state_i[j] > state_i[j-1] and state_i[j] > state_i[j+1]):
-                times.append(lintime[j])
-        all_periods.append(times)
-    periods_array1, periods_array2 = find_periods(all_periods)
-    mean_period1 = sum(periods_array1)/len(periods_array1)
-    mean_period2 = sum(periods_array2)/len(periods_array2)
-    print('0.1',I,mean_period1,mean_period2)
-    return [mean_period1,mean_period2]
+        solution = solve_ivp(f,(0,T),y0,'Radau',dense_output=True,args=(I,I_ref),jac=jacobian, rtol=0.0001, atol=0.0001, first_step=0.000001)
+        dense_state = np.array([solution.sol(t) for t in lintime])
+        periods = []
+        for i in range(0,4*N,4):
+            state_i = np.array([row[i] for row in dense_state])
+            time_series = []
+            for j in range(1,state_i.size-1):
+                if (state_i[j]>state_i[j-1] and state_i[j]>state_i[j+1]):
+                    time_series.append(lintime[j])
+                elif (state_i[j]<state_i[j+1] and state_i[j]<state_i[j-1]):
+                      time_series.append(lintime[j])
+            a = np.mean(np.diff(time_series)[::2])
+            b = np.mean(np.diff(time_series)[1::2])
+            periods.append([a,b])
+        means = [np.mean([row[0] for row in periods]),np.mean([row[1] for row in periods])]
+        print(I,I_ref,means[0],means[1],sep=',')
+        return means
 if __name__ == '__main__':
     pool = multiprocessing.Pool(processes=None)
-    I_range = np.linspace(0.11,0.61,51)
+    I_range = np.linspace(0.8,0.875,75,endpoint=False)
     results = pool.map(simulation,I_range)
     pool.close()
     pool.join()
-    t1 = tm.time()
-    print('\nTime:',t1-t0)
-    print('Done')
-
-"""
-i = 1
-for result in results[::2]:
-    np.savetxt('./output/'+str(i)+'data.csv',result,delimiter=',')
-    i += 1
-"""
