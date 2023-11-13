@@ -70,8 +70,8 @@ def jacobian(t, y,I1,I2):
     return csr_array((data, indices, indptr),shape=(4*N,4*N))
 
 # Calculations --------------------------------------------------
-print('I1,I2,T1,T2')
-I_ref=0.01
+print('I1,I2,T1,E1,T2,E2')
+I_ref=0.88
 def simulation(I):
     with threadpool_limits(limits=1, user_api='blas'):
         solution = solve_ivp(f,(0,T),y0,'Radau',dense_output=True,args=(I_ref,I),jac=jacobian, rtol=0.0001, atol=0.0001, first_step=0.000001)
@@ -89,11 +89,12 @@ def simulation(I):
             b = np.mean(np.diff(time_series)[1::2])
             periods.append([a,b])
         means = [np.mean([row[0] for row in periods]),np.mean([row[1] for row in periods])]
-        print(I_ref,I,means[0],means[1],sep=',')
+        std_devs = [np.std([row[0] for row in periods]),np.std([row[1] for row in periods])]
+        print(I_ref,I,means[0],std_devs[0],means[1],std_devs[1],sep=',')
         return means
 if __name__ == '__main__':
     pool = multiprocessing.Pool(processes=None)
-    I_range = np.linspace(0.05,0.65,60,endpoint=False)
+    I_range = np.linspace(0.81,0.87,60,endpoint=False)
     results = pool.map(simulation,I_range)
     pool.close()
     pool.join()
