@@ -66,3 +66,10 @@ plt.plot(solution.y[0],solution.y[1],color='k')
 plt.plot(xes, null_clines[0], color='tab:gray', linestyle='--')
 plt.plot(xes, null_clines[1], color='tab:gray', linestyle='--')
 plt.show()
+
+times = []
+for i in range(1,len(solution.y[0])-1):
+    if (solution.y[0][i]>solution.y[0][i+1] and solution.y[0][i]>solution.y[0][i-1]):
+        times.append(solution.t[i])
+
+print(np.mean(np.diff(times[1::])), np.std(np.diff(times[1::])))
