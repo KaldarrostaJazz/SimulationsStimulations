@@ -26,8 +26,8 @@ T = args.T
 N = args.N
 J = args.J
 K = args.K
-I1 = 0.75
-I2 = 0.8
+I1 = 0.5
+I2 = 0.6
 
 # Initial state, jacobian and ODEs of the system --------------------------------------------------
 restState = [-1.199408035, -0.624260044, -1.199408035, -0.624260044]
@@ -117,12 +117,9 @@ def update(frame, data):
     ax.set_xlim(0, N)
     ax.set_ylim(-5, 5)
     ax.grid()
-    ax.set_xlabel("Neuron index (1-"+str(N)+')')
-    ax.set_ylabel("Voltage")
     ax.text(40,3.5,text)
-    ax.plot(data[frame][::4], 'o', markersize=3,color='tab:red',label='Anello A')
-    ax.plot(data[frame][2::4], 'o', markersize=3,color='tab:green',label='Anello B')
-    fig3.legend()
+    ax.plot(data[frame][::4], 'o', markersize=3)
+    ax.plot(data[frame][2::4], 'o', markersize=3)
 animation = FuncAnimation(fig3, partial(update,data=dense_state),frames=range(len(dense_state)), init_func=init, interval=10)
 #Writer = writers['ffmpeg']
 #writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=10000)
