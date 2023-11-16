@@ -8,15 +8,22 @@ from math import exp
 from scipy.integrate import Radau
 from scipy.stats import linregress
 from scipy.sparse import csr_array
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-T','--t_bound',default=250,type=float)
+parser.add_argument('-N','--neurons',default=100,type=int)
+parser.add_argument('-J','--coupling',default=0.5,type=float)
+args = parser.parse_args()
 
 # Fixed parameters --------------------------------------------------
 e = 0.08
 a = 0.7
 b = 0.8
-T = 200
+T = args.t_bound
 # Parameters --------------------------------------------------
-N = 500
-J = 1.5
+N = args.neurons
+J = args.coupling
 
 # Some utilities --------------------------------------------------
 def find_max(vector_state):
