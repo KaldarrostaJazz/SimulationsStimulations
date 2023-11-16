@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Sguera
+    given-names: Giuseppe
+    mail: giuseppe.sguera2@studio.unibo.it
+title: "Implementation of the FitzHugh-Nagumo model on an annular
+	network"
+version: 0.2
+date-released: 2023-11-17
