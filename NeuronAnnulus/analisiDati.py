@@ -16,35 +16,36 @@ dataArray=[pd.read_csv('data/prima_run.csv',dtype=float),
            pd.read_csv('data/quarta_run.csv',dtype=float)]
 dataFrame = [pd.DataFrame(data) for data in dataArray]
 
-x = [dataFrame[0].sort_values(by=["I2"],ascending=True).I2,
-      dataFrame[1].sort_values(by=["I2"],ascending=True).I2,
+x = [dataFrame[0].sort_values(by=["I2"],ascending=True).I2[21::],
+        dataFrame[1].sort_values(by=["I2"],ascending=True).I2[:-8],
       dataFrame[2].sort_values(by=["I2"],ascending=True).I2,
       dataFrame[3].sort_values(by=["I2"],ascending=True).I2]
-y1 = [dataFrame[0].sort_values(by=["I2"],ascending=True).T1,
-      dataFrame[1].sort_values(by=["I2"],ascending=True).T1,
+y1 = [dataFrame[0].sort_values(by=["I2"],ascending=True).T1[21::],
+        dataFrame[1].sort_values(by=["I2"],ascending=True).T1[:-8],
       dataFrame[2].sort_values(by=["I2"],ascending=True).T1,
       dataFrame[3].sort_values(by=["I2"],ascending=True).T1]
-y2 = [dataFrame[0].sort_values(by=["I2"],ascending=True).T2,
-      dataFrame[1].sort_values(by=["I2"],ascending=True).T2,
+y2 = [dataFrame[0].sort_values(by=["I2"],ascending=True).T2[21::],
+        dataFrame[1].sort_values(by=["I2"],ascending=True).T2[:-8],
       dataFrame[2].sort_values(by=["I2"],ascending=True).T2,
       dataFrame[3].sort_values(by=["I2"],ascending=True).T2]
 
-par_1, cov_1 = curve_fit(log_function,x[3],y1[3],p0=(12.5,0.6,-1/0.88))
-fit_linear = linregress(x[3],y2[3])
-print("Quarta Run, risulati dei fit:")
-print("Logaritmico:",chi_square(y1[3],[log_function(xx,par_1[0],par_1[1],par_1[2]) for xx in x[3]]))
+par_1, cov_1 = curve_fit(log_function,x[0],y2[0],p0=(12.5,0.6,0.1),maxfev=5000)
+fit_linear = linregress(x[0],y1[0])
+print("Seconda Run, risulati dei fit:")
+print("Logaritmico:",chi_square(y1[0],[log_function(xx,par_1[0],par_1[1],par_1[2]) for xx in x[0]]))
 print(par_1,[np.sqrt(cov_1[i][i]) for i in range(3)])
-print("Lineare:",chi_square(y2[3],[xx*fit_linear.slope + fit_linear.intercept for xx in x[3]]))
+print("Lineare:",chi_square(y2[0],[xx*fit_linear.slope + fit_linear.intercept for xx in x[0]]))
 print("Slope:",fit_linear.slope,"Intercetta:",fit_linear.intercept)
 print("pValue:",fit_linear.pvalue,"rValue:",fit_linear.rvalue)
+print("======================================================================")
 fig, axes = plt.subplots(figsize=(8,5))
 axes.set_xlabel("Impulso $I_b$")
 axes.set_ylabel("Periodo di dominanza")
 axes.grid()
-axes.plot(x[3],y1[3],'k+',label="Anello A")
-axes.plot(x[3],y2[3],'kx',label="Anello B")
-axes.plot(x[3],[log_function(xx,par_1[0],par_1[1],par_1[2]) for xx in x[3]],color='crimson',label="Fit logaritmico")
-axes.plot(x[3],[xx*fit_linear.slope + fit_linear.intercept for xx in x[3]],color='steelblue',label="Fit lineare")
-axes.plot([],[],'',label='$I_a=0.88$')
+axes.plot(x[0],y1[0],'ko',label="Anello A")
+axes.plot(x[0],y2[0],'kx',label="Anello B")
+axes.plot(x[0],[log_function(xx,par_1[0],par_1[1],par_1[2]) for xx in x[0]],color='crimson',label="Fit logaritmico")
+axes.plot(x[0],[xx*fit_linear.slope + fit_linear.intercept for xx in x[0]],color='steelblue',label="Fit lineare")
+axes.plot([],[],'',label='$I_a=0.01$')
 axes.legend()
 plt.show()
