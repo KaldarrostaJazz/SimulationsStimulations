@@ -1,5 +1,6 @@
 from threadpoolctl import threadpool_limits
 import matplotlib.pyplot as plt
+import matplotlib
 from matplotlib.animation import FuncAnimation, writers
 from functools import partial
 import numpy as np
@@ -14,7 +15,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-J', type=float,default=0.2,help='Synaptic strenght J')
 parser.add_argument('-K', type=float,default=0.4,help='Inhibition strenght K')
 parser.add_argument('-N',type=int,default=100,help='Number of neurons per annulus')
-parser.add_argument('-T',type=float,default=250,help='Integration final time')
+parser.add_argument('-T',type=float,default=300,help='Integration final time')
+parser.add_argument('--impulses',type=str,default='0.5,0.6',help='Stimuli to each annulus')
 args = parser.parse_args()
 
 # Fixed parameters --------------------------------------------------
@@ -26,8 +28,9 @@ T = args.T
 N = args.N
 J = args.J
 K = args.K
-I1 = 0.5
-I2 = 0.6
+Stimuli = [float(x) for x in args.impulses.split(',')]
+I1 = Stimuli[0]
+I2 = Stimuli[1]
 
 # Initial state, jacobian and ODEs of the system --------------------------------------------------
 restState = [-1.199408035, -0.624260044, -1.199408035, -0.624260044]
@@ -89,24 +92,17 @@ dense_state = np.array([solution.sol(t) for t in lintime])
 print("Time elapsed during the calculation:", t1 - t0)
 print("Time:",T,"s\tTime steps:", len(time))
 
-fig1, (ax1, ax2) = plt.subplots(1, 2,figsize=(10.2,5.1))
-fig1.suptitle("Neurons activity.\nJ="+str(J)+" K="+str(K))
-ax1.grid()
-ax1.set_title("25th neurons")
-ax1.set_xlabel("Time")
-ax1.set_ylabel("Voltage")
-ax1.plot(time, state[100],'k',label='Anello A, $I_a$='+str(I1))
-ax1.plot(time, state[102],'k--',label='Anello B, $I_b$='+str(I2))
-ax2.grid()
-ax2.set_title("75th neurons")
-ax2.set_xlabel("Time")
-ax2.set_ylabel("Voltage")
-ax2.plot(time, state[300],'k')
-ax2.plot(time, state[302],'k--')
+fig1, ax = plt.subplots(figsize=(4.2,2.1))
+fig1.suptitle("50th neurons activities.")
+ax.grid()
+ax.set_xlabel("Time")
+ax.set_ylabel("Voltage")
+ax.plot(time, state[200],'k',label="Anello A")
+ax.plot(time, state[202],'k--',label="Anello B")
 fig1.legend()
 
 # Animation --------------------------------------------------
-fig3, ax = plt.subplots(figsize=(10.2,5.1))
+"""fig3, ax = plt.subplots(figsize=(10.2,5.1))
 fig3.suptitle("Soliton wave animation")
 line1 = ax.plot()
 def init():
@@ -124,5 +120,5 @@ animation = FuncAnimation(fig3, partial(update,data=dense_state),frames=range(le
 #Writer = writers['ffmpeg']
 #writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=10000)
 #animation.save('ConstantImpulse.mp4', writer=writer)
-t3 = tm.time()
+t3 = tm.time()"""
 plt.show()
